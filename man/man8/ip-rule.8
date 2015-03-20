@@ -33,7 +33,9 @@ ip-rule \- routing policy database management
 .B  oif
 .IR STRING " ] [ "
 .B  pref
-.IR NUMBER " ]"
+.IR NUMBER " ] [ "
+.B reason
+.IR PURPOSE "]"
 
 .ti -8
 .IR ACTION " := [ "
@@ -218,6 +220,21 @@ set
 .I unique
 priority value.
 The options preference and order are synonyms with priority.
+
+.TP
+.BI reason " PURPOSE [ PURPOSE... ]"
+match rule if lookup purposes is one of the specified. Valid purposes are:
+
+.RS
+.B input
+- Route lookups for incomming packets
+
+.B output
+- Route lookups for outgoing packets
+
+.B source
+- Route lookups to select source address
+.RE
 
 .TP
 .BI table " TABLEID"

@@ -34,7 +34,7 @@ static void usage(void)
 {
 	fprintf(stderr, "Usage: ip rule [ list | add | del | flush ] SELECTOR ACTION\n");
 	fprintf(stderr, "SELECTOR := [ not ] [ from PREFIX ] [ to PREFIX ] [ tos TOS ] [ fwmark FWMARK[/MASK] ]\n");
-	fprintf(stderr, "            [ iif STRING ] [ oif STRING ] [ pref NUMBER ]\n");
+	fprintf(stderr, "            [ iif STRING ] [ oif STRING ] [ pref NUMBER ] [ reason PURPOSE ]\n");
 	fprintf(stderr, "ACTION := [ table TABLE_ID ]\n");
 	fprintf(stderr, "          [ prohibit | reject | unreachable ]\n");
 	fprintf(stderr, "          [ realms [SRCREALM/]DSTREALM ]\n");
@@ -43,7 +43,26 @@ static void usage(void)
 	fprintf(stderr, "SUPPRESSOR := [ suppress_prefixlength NUMBER ]\n");
 	fprintf(stderr, "              [ suppress_ifgroup DEVGROUP ]\n");
 	fprintf(stderr, "TABLE_ID := [ local | main | default | NUMBER ]\n");
+	fprintf(stderr, "PURPOSE := { input | output | source } [ PURPOSE ]\n");
 	exit(-1);
+}
+
+static const char *fib_reasons[FIB_REASON_MAX+1] = {
+	"unknown",
+	"input",
+	"output",
+	"source",
+};
+
+static uint32_t parse_fib_reason(const char *str)
+{
+	int i;
+
+	for (i = 1; i <= FIB_REASON_MAX; i++)
+		if (!strcasecmp(str, fib_reasons[i]))
+			return i;
+
+	return FIB_REASON_UNKNOWN;
 }
 
 int print_rule(const struct sockaddr_nl *who, struct nlmsghdr *n, void *arg)
@@ -146,6 +165,18 @@ int print_rule(const struct sockaddr_nl *who, struct nlmsghdr *n, void *arg)
 			fprintf(fp, "[detached] ");
 	}
 
+	if (tb[FRA_REASON]) {
+		uint32_t reason;
+		int i;
+
+		reason = rta_getattr_u32(tb[FRA_REASON]);
+		fprintf(fp, "reason ");
+
+		for (i = 1; i <= FIB_REASON_MAX; i++)
+			if (i & reason)
+				fprintf(fp, "%s ", fib_reasons[i]);
+	}
+
 	table = rtm_get_table(r, tb);
 	if (table) {
 		fprintf(fp, "lookup %s ", rtnl_rttable_n2a(table, b1, sizeof(b1)));
@@ -233,6 +264,7 @@ static int iprule_list(int argc, char **argv)
 static int iprule_modify(int cmd, int argc, char **argv)
 {
 	int table_ok = 0;
+	uint32_t reason = 0;
 	struct {
 		struct nlmsghdr	n;
 		struct rtmsg		r;
@@ -346,6 +378,18 @@ static int iprule_modify(int cmd, int argc, char **argv)
 			fprintf(stderr, "Warning: route NAT is deprecated\n");
 			addattr32(&req.n, sizeof(req), RTA_GATEWAY, get_addr32(*argv));
 			req.r.rtm_type = RTN_NAT;
+		} else if (strcmp(*argv, "reason") == 0) {
+			uint32_t n;
+
+			NEXT_ARG();
+			while ((n = parse_fib_reason(*argv))) {
+				reason |= (1 << (n - 1));
+				NEXT_ARG();
+			}
+
+			PREV_ARG();
+
+			addattr32(&req.n, sizeof(req), FRA_REASON, reason);
 		} else {
 			int type;
 
@@ -374,6 +418,11 @@ static int iprule_modify(int cmd, int argc, char **argv)
 
 	if (req.r.rtm_family == AF_UNSPEC)
 		req.r.rtm_family = AF_INET;
+
+	if (req.r.rtm_family != AF_INET && reason) {
+		fprintf(stderr, "reason selector only supported for IPv4 for now\n");
+		return 2;
+	}
 
 	if (!table_ok && cmd == RTM_NEWRULE)
 		req.r.rtm_table = RT_TABLE_MAIN;
