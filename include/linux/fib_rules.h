@@ -36,7 +36,7 @@ enum {
 	FRA_IIFNAME,	/* interface name */
 #define FRA_IFNAME	FRA_IIFNAME
 	FRA_GOTO,	/* target to jump to (FR_ACT_GOTO) */
-	FRA_UNUSED2,
+	FRA_REASON,
 	FRA_PRIORITY,	/* priority/preference */
 	FRA_UNUSED3,
 	FRA_UNUSED4,
@@ -68,5 +68,15 @@ enum {
 };
 
 #define FR_ACT_MAX (__FR_ACT_MAX - 1)
+
+enum {
+	FIB_REASON_UNKNOWN,
+	FIB_REASON_INPUT,
+	FIB_REASON_OUTPUT,
+	FIB_REASON_SOURCE,
+	__FIB_REASON_MAX,
+};
+
+#define FIB_REASON_MAX (__FIB_REASON_MAX - 1)
 
 #endif
