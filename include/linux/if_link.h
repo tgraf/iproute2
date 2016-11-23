@@ -872,10 +872,14 @@ enum {
 
 /* XDP section */
 
+#define XDP_FLAGS_CHK_EXISTS	(1U << 0)
+#define XDP_FLAGS_MASK		(XDP_FLAGS_CHK_EXISTS)
+
 enum {
 	IFLA_XDP_UNSPEC,
 	IFLA_XDP_FD,
 	IFLA_XDP_ATTACHED,
+	IFLA_XDP_FLAGS,
 	__IFLA_XDP_MAX,
 };
 
