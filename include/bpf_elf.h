@@ -18,6 +18,7 @@
 #define ELF_SECTION_PROG	"prog"
 #define ELF_SECTION_CLASSIFIER	"classifier"
 #define ELF_SECTION_ACTION	"action"
+#define ELF_SECTION_LWT		"lwt"
 
 #define ELF_MAX_MAPS		64
 #define ELF_MAX_LICENSE_LEN	128
