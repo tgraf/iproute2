@@ -1284,7 +1284,7 @@ retry:
 		 * log for the user, so enlarge it and re-fail.
 		 */
 		if (fd < 0 && (errno == ENOSPC || !ctx->log_size)) {
-			if (tries++ < 6 && !bpf_log_realloc(ctx))
+			if (tries++ < 10 && !bpf_log_realloc(ctx))
 				goto retry;
 
 			fprintf(stderr, "Log buffer too small to dump verifier log %zu bytes (%d tries)!\n",
